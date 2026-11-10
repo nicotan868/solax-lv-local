@@ -93,7 +93,7 @@ class SolaxLvOptionsFlow(OptionsFlow):
             {
                 vol.Required(
                     CONF_SCAN_INTERVAL, default=opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-                ): vol.All(int, vol.Range(5, 300)),
+                ): vol.All(int, vol.Range(1, 300)),
                 vol.Required(
                     CONF_DAILY_WRITE_LIMIT, default=opts.get(CONF_DAILY_WRITE_LIMIT, DEFAULT_DAILY_WRITE_LIMIT)
                 ): vol.All(int, vol.Range(1, 50)),
