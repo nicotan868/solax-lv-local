@@ -216,3 +216,10 @@ async def test_upgrade_from_separate_devices(hass: HomeAssistant, fake_inverter)
     assert moved.device_id == inverter.id
     assert dev_reg.async_get(old_dev.id) is None
     assert hass.states.get("sensor.solax_local_pv1_power").state == "2392"
+
+
+async def test_has_brand_images(hass: HomeAssistant):
+    from homeassistant.loader import async_get_integration
+
+    integration = await async_get_integration(hass, DOMAIN)
+    assert integration.has_branding
