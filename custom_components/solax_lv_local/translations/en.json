@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SolaX X1-Hybrid-LV (local Modbus)",
+        "description": "Connect through a serial device server (e.g. Moxa NPort) in TCP Server mode: RS-485 2-wire, 9600 baud, 8N1.",
+        "data": {
+          "host": "Device server IP address",
+          "port": "TCP port",
+          "unit_id": "Modbus address (inverter LCD: Ex485 Modbus Address)"
+        }
+      },
+      "unsupported": {
+        "title": "Unverified model",
+        "description": "The inverter answered with serial {serial}. This integration's register map was verified on X1-Hybrid-LV 6 kW units (serial prefix HL1060). Values may be wrong on other models. Continue anyway?"
+      }
+    },
+    "error": {
+      "cannot_connect": "No Modbus answer. Check the IP/port, the device server's serial settings (RS-485 2-wire, 9600 8N1) and the A/B wiring.",
+      "no_serial": "The device answered but returned no serial number."
+    },
+    "abort": {
+      "already_configured": "This inverter is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "SolaX LV Local options",
+        "data": {
+          "scan_interval": "Fast poll interval (seconds)",
+          "daily_write_limit": "Max writes per setting per day (protects the inverter's EEPROM)"
+        }
+      }
+    }
+  }
+}
