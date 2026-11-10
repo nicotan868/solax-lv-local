@@ -11,9 +11,6 @@ from .coordinator import SolaxCoordinator
 MODELS = {
     DEV_INVERTER: "X1-Hybrid-LV",
     DEV_BATTERY: "LV battery (BMS)",
-    "pv": "PV inputs",
-    "eps": "EPS / backup output",
-    "generator": "Generator / V2L input",
 }
 
 

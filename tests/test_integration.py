@@ -120,7 +120,10 @@ async def test_states_devices_and_entities(hass: HomeAssistant, fake_inverter):
     battery = by_ident["HL1060TEST0001_battery"]
     assert battery.serial_number == "BATTEST0000001"
     assert battery.via_device_id == inverter.id
-    assert len(devices) == 5
+    assert len(devices) == 2
+    pv1 = ent_reg.async_get(ent_reg.async_get_entity_id("sensor", DOMAIN, "HL1060TEST0001_pv1_power"))
+    assert pv1.device_id == inverter.id
+    assert ent_reg.async_get(ent_reg.async_get_entity_id("sensor", DOMAIN, "HL1060TEST0001_inverter_power_factor")).entity_category == "diagnostic"
 
 
 async def test_number_write_guarded(hass: HomeAssistant, fake_inverter):
@@ -183,3 +186,33 @@ async def test_diagnostics(hass: HomeAssistant, fake_inverter):
     assert diag["identity"]["serial"] == "HL1060TEST0001"
     assert diag["registers"]["input:0x0550"] == 0
     assert diag["registers"]["input:0x0551"] == 3109
+
+
+async def test_upgrade_from_separate_devices(hass: HomeAssistant, fake_inverter):
+    """v0.1.0 entities on the old PV device keep their entity_id and move to the inverter."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "127.0.0.1", CONF_PORT: fake_inverter.port, CONF_UNIT_ID: 1},
+        unique_id="HL1060TEST0001",
+    )
+    entry.add_to_hass(hass)
+    dev_reg = dr.async_get(hass)
+    ent_reg = er.async_get(hass)
+    old_dev = dev_reg.async_get_or_create(
+        config_entry_id=entry.entry_id, identifiers={(DOMAIN, "HL1060TEST0001_pv")}, name="SolaX Local PV"
+    )
+    old = ent_reg.async_get_or_create(
+        "sensor", DOMAIN, "HL1060TEST0001_pv1_power", config_entry=entry, device_id=old_dev.id,
+        suggested_object_id="solax_local_pv1_power",
+    )
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    moved = ent_reg.async_get(old.entity_id)
+    assert moved is not None and moved.entity_id == "sensor.solax_local_pv1_power"
+    inverter = next(
+        d for d in dr.async_entries_for_config_entry(dev_reg, entry.entry_id)
+        if (DOMAIN, "HL1060TEST0001_inverter") in d.identifiers
+    )
+    assert moved.device_id == inverter.id
+    assert dev_reg.async_get(old_dev.id) is None
+    assert hass.states.get("sensor.solax_local_pv1_power").state == "2392"

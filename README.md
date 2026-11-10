@@ -6,13 +6,17 @@ No cloud, no dependencies beyond Home Assistant.
 
 ## Devices and entities
 
-- **SolaX Local Inverter**: grid voltage/frequency/power, inverter power/current/PF/temperature, energy
-  today/total, run mode, work mode and other settings (diagnostic), plus controls.
+Two devices, laid out like the SolaX cloud integration:
+
+- **SolaX Local Inverter**: grid voltage/frequency/power; output power, current, today/total; solar
+  power and string 1/2 voltage, current, power; backup (EPS) voltage, current, power, frequency;
+  generator/V2L voltage, current, power, frequency; run mode, temperature; settings and codes
+  (diagnostic); plus the controls below.
 - **SolaX Local Battery**: SoC, voltage, current, power, temperature, charged/discharged today/total,
   cycles, max/min cell voltage and temperature, 16 cell voltages and 6 BMS temperatures (diagnostic).
-- **SolaX Local PV**: string 1/2 voltage, current, power and total power.
-- **SolaX Local EPS**: backup output voltage, current, power, frequency.
-- **SolaX Local Generator**: generator/V2L input voltage, current, power, frequency, rated power.
+
+Apparent power and power factor are diagnostic only: on the tested unit apparent power can read
+slightly below active power, and the power factor stays at a fixed value.
 
 Sign conventions: grid power positive = importing; battery power positive = charging.
 

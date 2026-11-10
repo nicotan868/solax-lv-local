@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .client import FC_READ_HOLDING, FC_READ_INPUT
-from .const import DEV_BATTERY, DEV_EPS, DEV_GENERATOR, DEV_INVERTER, DEV_PV
+from .const import DEV_BATTERY, DEV_INVERTER
 
 FAST, MEDIUM, SLOW = "fast", "medium", "slow"
 
@@ -123,12 +123,12 @@ SENSORS: tuple[Reg, ...] = (
     Reg("ac_voltage", "AC voltage", DEV_INVERTER, I, 0x0103, scale=0.1, precision=1, unit=V, device_class="voltage", diagnostic=True),
     Reg("grid_frequency", "Grid frequency", DEV_INVERTER, I, 0x0106, scale=0.01, precision=2, unit=HZ, device_class="frequency"),
     Reg("grid_power", "Grid power", DEV_INVERTER, I, 0x0550, "s32", unit=W, device_class="power", icon="mdi:transmission-tower"),
-    Reg("inverter_current", "Current", DEV_INVERTER, I, 0x0180, "s16", 0.1, 1, A, "current"),
-    Reg("inverter_power", "Power", DEV_INVERTER, I, 0x0183, "s32", unit=W, device_class="power"),
-    Reg("inverter_apparent_power", "Apparent power", DEV_INVERTER, I, 0x0187, "u32", unit=VA, device_class="apparent_power"),
-    Reg("inverter_power_factor", "Power factor", DEV_INVERTER, I, 0x018F, "s16", 0.001, 3, device_class="power_factor"),
-    Reg("inverter_energy_today", "Energy today", DEV_INVERTER, I, 0x0189, "u16", 0.1, 1, KWH, "energy", "total_increasing"),
-    Reg("inverter_energy_total", "Energy total", DEV_INVERTER, I, 0x018A, "u32", 0.1, 1, KWH, "energy", "total_increasing"),
+    Reg("inverter_current", "Output current", DEV_INVERTER, I, 0x0180, "s16", 0.1, 1, A, "current"),
+    Reg("inverter_power", "Output power", DEV_INVERTER, I, 0x0183, "s32", unit=W, device_class="power"),
+    Reg("inverter_apparent_power", "Apparent power", DEV_INVERTER, I, 0x0187, "u32", unit=VA, device_class="apparent_power", diagnostic=True),
+    Reg("inverter_power_factor", "Power factor", DEV_INVERTER, I, 0x018F, "s16", 0.001, 3, device_class="power_factor", diagnostic=True),
+    Reg("inverter_energy_today", "Output today", DEV_INVERTER, I, 0x0189, "u16", 0.1, 1, KWH, "energy", "total_increasing"),
+    Reg("inverter_energy_total", "Output total", DEV_INVERTER, I, 0x018A, "u32", 0.1, 1, KWH, "energy", "total_increasing"),
     Reg("run_mode", "Run mode", DEV_INVERTER, I, 0x0200, options=RUN_MODE, state_class=None, device_class="enum"),
     Reg("inverter_temperature", "Temperature", DEV_INVERTER, I, 0x0202, "s16", 0.1, 1, C, "temperature"),
     Reg("busbar_positive_temperature", "Battery busbar + temperature", DEV_INVERTER, I, 0x020E, "s16", 0.1, 1, C, "temperature", diagnostic=True),
@@ -146,25 +146,25 @@ SENSORS: tuple[Reg, ...] = (
     Reg("eps_min_soc", "EPS min SoC", DEV_INVERTER, H, 0x2515, unit=PCT, state_class=None, diagnostic=True),
     Reg("recover_soc", "Recover SoC", DEV_INVERTER, H, 0x2516, unit=PCT, state_class=None, diagnostic=True),
     Reg("max_grid_charge_current", "Max grid charge current", DEV_INVERTER, H, 0x2517, unit=A, state_class=None, diagnostic=True),
-    Reg("generator_rated_power", "Generator rated power", DEV_GENERATOR, H, 0x2542, scale=0.01, precision=2, unit="kW", state_class=None, diagnostic=True),
+    Reg("generator_rated_power", "Generator rated power", DEV_INVERTER, H, 0x2542, scale=0.01, precision=2, unit="kW", state_class=None, diagnostic=True),
     # ---- PV
-    Reg("pv1_voltage", "String 1 voltage", DEV_PV, I, 0x028B, "s16", 0.1, 1, V, "voltage"),
-    Reg("pv1_current", "String 1 current", DEV_PV, I, 0x028C, "s16", 0.1, 1, A, "current"),
-    Reg("pv1_power", "String 1 power", DEV_PV, I, 0x028D, "u32", unit=W, device_class="power"),
-    Reg("pv2_voltage", "String 2 voltage", DEV_PV, I, 0x0292, "s16", 0.1, 1, V, "voltage"),
-    Reg("pv2_current", "String 2 current", DEV_PV, I, 0x0293, "s16", 0.1, 1, A, "current"),
-    Reg("pv2_power", "String 2 power", DEV_PV, I, 0x0294, "u32", unit=W, device_class="power"),
+    Reg("pv1_voltage", "Solar string 1 voltage", DEV_INVERTER, I, 0x028B, "s16", 0.1, 1, V, "voltage"),
+    Reg("pv1_current", "Solar string 1 current", DEV_INVERTER, I, 0x028C, "s16", 0.1, 1, A, "current"),
+    Reg("pv1_power", "Solar string 1 power", DEV_INVERTER, I, 0x028D, "u32", unit=W, device_class="power"),
+    Reg("pv2_voltage", "Solar string 2 voltage", DEV_INVERTER, I, 0x0292, "s16", 0.1, 1, V, "voltage"),
+    Reg("pv2_current", "Solar string 2 current", DEV_INVERTER, I, 0x0293, "s16", 0.1, 1, A, "current"),
+    Reg("pv2_power", "Solar string 2 power", DEV_INVERTER, I, 0x0294, "u32", unit=W, device_class="power"),
     # ---- EPS (backup output)
-    Reg("eps_voltage", "Voltage", DEV_EPS, I, 0x0400, "s16", 0.1, 1, V, "voltage"),
-    Reg("eps_current", "Current", DEV_EPS, I, 0x0401, "s16", 0.1, 1, A, "current"),
-    Reg("eps_power", "Power", DEV_EPS, I, 0x0402, "s32", 0.1, 0, W, "power"),
-    Reg("eps_frequency", "Frequency", DEV_EPS, I, 0x0404, scale=0.01, precision=2, unit=HZ, device_class="frequency"),
+    Reg("eps_voltage", "Backup (EPS) voltage", DEV_INVERTER, I, 0x0400, "s16", 0.1, 1, V, "voltage"),
+    Reg("eps_current", "Backup (EPS) current", DEV_INVERTER, I, 0x0401, "s16", 0.1, 1, A, "current"),
+    Reg("eps_power", "Backup (EPS) power", DEV_INVERTER, I, 0x0402, "s32", 0.1, 0, W, "power"),
+    Reg("eps_frequency", "Backup (EPS) frequency", DEV_INVERTER, I, 0x0404, scale=0.01, precision=2, unit=HZ, device_class="frequency"),
     # ---- Generator / V2L input
-    Reg("generator_voltage", "Voltage", DEV_GENERATOR, I, 0x0440, "s16", 0.1, 1, V, "voltage"),
-    Reg("generator_current", "Current", DEV_GENERATOR, I, 0x0441, "s16", 0.1, 1, A, "current"),
-    Reg("generator_power", "Power", DEV_GENERATOR, I, 0x0442, "s32", 0.1, 0, W, "power"),
+    Reg("generator_voltage", "Generator voltage", DEV_INVERTER, I, 0x0440, "s16", 0.1, 1, V, "voltage"),
+    Reg("generator_current", "Generator current", DEV_INVERTER, I, 0x0441, "s16", 0.1, 1, A, "current"),
+    Reg("generator_power", "Generator power", DEV_INVERTER, I, 0x0442, "s32", 0.1, 0, W, "power"),
     # Scale per the SolaX sheet (0.1 Hz); unverified until a generator/V2L is connected.
-    Reg("generator_frequency", "Frequency", DEV_GENERATOR, I, 0x0444, scale=0.1, precision=1, unit=HZ, device_class="frequency"),
+    Reg("generator_frequency", "Generator frequency", DEV_INVERTER, I, 0x0444, scale=0.1, precision=1, unit=HZ, device_class="frequency"),
     # ---- Battery
     Reg("battery_soc", "State of charge", DEV_BATTERY, I, 0x0C04, scale=0.1, precision=1, unit=PCT, device_class="battery"),
     Reg("battery_voltage", "Voltage", DEV_BATTERY, I, 0x0480, "s16", 0.1, 1, V, "voltage"),

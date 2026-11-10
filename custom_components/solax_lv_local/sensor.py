@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import SolaxConfigEntry
-from .const import DEV_PV
+from .const import DEV_INVERTER
 from .entity import SolaxEntity
 from .registers import SENSORS, Reg, decode
 
@@ -51,14 +51,14 @@ class SolaxSensor(SolaxEntity, SensorEntity):
 
 
 class PvTotalSensor(SolaxEntity, SensorEntity):
-    _attr_name = "Total power"
+    _attr_name = "Solar power"
     _attr_device_class = SensorDeviceClass.POWER
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "W"
     _attr_icon = "mdi:solar-power"
 
     def __init__(self, coordinator) -> None:
-        super().__init__(coordinator, DEV_PV, "pv_power")
+        super().__init__(coordinator, DEV_INVERTER, "pv_power")
 
     @property
     def native_value(self):

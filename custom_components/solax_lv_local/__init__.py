@@ -9,7 +9,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 
 from .client import RtuOverTcpClient
-from .const import CONF_UNIT_ID, DEFAULT_UNIT_ID, DEV_INVERTER
+from .const import CONF_UNIT_ID, DEFAULT_UNIT_ID, DEV_BATTERY, DEV_INVERTER, DOMAIN
 from .coordinator import SolaxCoordinator
 from .entity import device_info
 
@@ -35,6 +35,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: SolaxConfigEntry) -> boo
     )
     coordinator.inverter_device_id = inverter.id
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # v0.1.0 had separate PV/EPS/Generator devices; their entities now live on the
+    # inverter (moved when the platforms above registered them). Remove any device of this entry that is no longer used.
+    serial = coordinator.identity["serial"]
+    current = {f"{serial}_{DEV_INVERTER}", f"{serial}_{DEV_BATTERY}"}
+    dev_reg = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
+        if not any(i[0] == DOMAIN and i[1] in current for i in device.identifiers):
+            dev_reg.async_update_device(device.id, remove_config_entry_id=entry.entry_id)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
 

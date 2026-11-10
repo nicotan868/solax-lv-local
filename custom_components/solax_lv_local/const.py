@@ -21,14 +21,8 @@ SLOW_EVERY = 30  # 5 min at the default 10 s
 # Device keys
 DEV_INVERTER = "inverter"
 DEV_BATTERY = "battery"
-DEV_PV = "pv"
-DEV_EPS = "eps"
-DEV_GENERATOR = "generator"
 
 DEVICE_NAMES = {
     DEV_INVERTER: "SolaX Local Inverter",
     DEV_BATTERY: "SolaX Local Battery",
-    DEV_PV: "SolaX Local PV",
-    DEV_EPS: "SolaX Local EPS",
-    DEV_GENERATOR: "SolaX Local Generator",
 }
