@@ -96,7 +96,7 @@ async def test_states_devices_and_entities(hass: HomeAssistant, fake_inverter):
     assert state("inverter_energy_total").state == "524.1"
     assert state("eps_power").state == "4111"
     assert state("battery_soc").state == "99.9"
-    assert state("battery_power").state == "4"
+    assert state("battery_power").state == "0"  # 4 W idle noise, deadband 10 W
     assert state("battery_temperature").state == "36.0"
     assert state("battery_charge_total").state == "77.8"
     assert state("cell_07_voltage").state == "3551"

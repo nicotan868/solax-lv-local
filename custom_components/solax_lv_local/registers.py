@@ -77,6 +77,7 @@ class Reg:
     enabled: bool = True
     options: dict[int, str] | None = None  # enum mapping
     display_precision: int | None = None  # UI rounding (value keeps full precision)
+    deadband: float | None = None  # |value| below this reads as 0 (idle noise)
     icon: str | None = None
 
     @property
@@ -101,6 +102,8 @@ def decode(reg: Reg, cache: dict[tuple[int, int], int]):
     if reg.options is not None:
         return reg.options.get(raw, f"unknown ({raw})")
     value = raw * reg.scale
+    if reg.deadband is not None and abs(value) < reg.deadband:
+        value = 0
     if reg.precision is not None:
         return round(value, reg.precision) if reg.precision else int(round(value))
     return value
@@ -170,7 +173,7 @@ SENSORS: tuple[Reg, ...] = (
     Reg("battery_soc", "State of charge", DEV_BATTERY, I, 0x0C04, scale=0.1, precision=1, unit=PCT, device_class="battery", display_precision=0),
     Reg("battery_voltage", "Voltage", DEV_BATTERY, I, 0x0480, "s16", 0.1, 1, V, "voltage"),
     Reg("battery_current", "Current", DEV_BATTERY, I, 0x0481, "s16", 0.1, 1, A, "current"),
-    Reg("battery_power", "Power", DEV_BATTERY, I, 0x0482, "s32", 0.1, 0, W, "power"),
+    Reg("battery_power", "Power", DEV_BATTERY, I, 0x0482, "s32", 0.1, 0, W, "power", deadband=10),
     Reg("battery_temperature", "Temperature", DEV_BATTERY, I, 0x0484, "s16", 0.1, 1, C, "temperature"),
     Reg("battery_charge_today", "Charged today", DEV_BATTERY, I, 0x0488, "u16", 0.1, 1, KWH, "energy", "total_increasing"),
     Reg("battery_charge_total", "Charged total", DEV_BATTERY, I, 0x0489, "u32", 0.1, 1, KWH, "energy", "total_increasing"),
