@@ -227,28 +227,28 @@ CONTROLS: tuple[Control, ...] = (
             start=1,
         )
         for c in (
-            Control(f"charge_{p}_start", f"Charge {p} start", cs, "time", icon="mdi:battery-clock"),
-            Control(f"charge_{p}_end", f"Charge {p} end", ce, "time", icon="mdi:battery-clock"),
-            Control(f"discharge_{p}_start", f"Discharge {p} start", ds, "time", icon="mdi:battery-clock-outline"),
-            Control(f"discharge_{p}_end", f"Discharge {p} end", de, "time", icon="mdi:battery-clock-outline"),
+            Control(f"charge_{p}_start", f"Charge {p} – 1 Start", cs, "time", icon="mdi:battery-clock"),
+            Control(f"charge_{p}_end", f"Charge {p} – 2 End", ce, "time", icon="mdi:battery-clock"),
+            Control(f"discharge_{p}_start", f"Discharge {p} – 1 Start", ds, "time", icon="mdi:battery-clock-outline"),
+            Control(f"discharge_{p}_end", f"Discharge {p} – 2 End", de, "time", icon="mdi:battery-clock-outline"),
         )
     ),
     *(
-        Control(f"discharge_{p}_stop_soc", f"Discharge {p} stop SoC", 0x258F + p - 1, "number", 10, 40, 1, PCT, "mdi:battery-arrow-down")
+        Control(f"discharge_{p}_stop_soc", f"Discharge {p} – 3 Stop SoC", 0x258F + p - 1, "number", 10, 40, 1, PCT, "mdi:battery-arrow-down")
         for p in (1, 2, 3)
     ),
     *(
         # Sheet says 20-99; the inverter ships with 100, so allow 100.
-        Control(f"charge_{p}_stop_soc", f"Charge {p} stop SoC", 0x2592 + p - 1, "number", 20, 100, 1, PCT, "mdi:battery-arrow-up")
+        Control(f"charge_{p}_stop_soc", f"Charge {p} – 3 Stop SoC", 0x2592 + p - 1, "number", 20, 100, 1, PCT, "mdi:battery-arrow-up")
         for p in (1, 2, 3)
     ),
     *(
         # Sheet allows up to 12000 W; capped at the 6 kW inverter rating.
-        Control(f"charge_{p}_max_power", f"Charge {p} max power", 0x2595 + p - 1, "number", 0, 6000, 100, W, "mdi:battery-charging")
+        Control(f"charge_{p}_max_power", f"Charge {p} – 4 Max power", 0x2595 + p - 1, "number", 0, 6000, 100, W, "mdi:battery-charging")
         for p in (1, 2, 3)
     ),
     *(
-        Control(f"discharge_{p}_max_power", f"Discharge {p} max power", 0x2598 + p - 1, "number", 0, 6000, 100, W, "mdi:home-battery")
+        Control(f"discharge_{p}_max_power", f"Discharge {p} – 4 Max power", 0x2598 + p - 1, "number", 0, 6000, 100, W, "mdi:home-battery")
         for p in (1, 2, 3)
     ),
 )
