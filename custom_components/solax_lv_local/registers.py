@@ -76,6 +76,7 @@ class Reg:
     diagnostic: bool = False
     enabled: bool = True
     options: dict[int, str] | None = None  # enum mapping
+    display_precision: int | None = None  # UI rounding (value keeps full precision)
     icon: str | None = None
 
     @property
@@ -166,7 +167,7 @@ SENSORS: tuple[Reg, ...] = (
     # Scale per the SolaX sheet (0.1 Hz); unverified until a generator/V2L is connected.
     Reg("generator_frequency", "Generator – 4 Frequency", DEV_INVERTER, I, 0x0444, scale=0.1, precision=1, unit=HZ, device_class="frequency"),
     # ---- Battery
-    Reg("battery_soc", "State of charge", DEV_BATTERY, I, 0x0C04, scale=0.1, precision=1, unit=PCT, device_class="battery"),
+    Reg("battery_soc", "State of charge", DEV_BATTERY, I, 0x0C04, scale=0.1, precision=1, unit=PCT, device_class="battery", display_precision=0),
     Reg("battery_voltage", "Voltage", DEV_BATTERY, I, 0x0480, "s16", 0.1, 1, V, "voltage"),
     Reg("battery_current", "Current", DEV_BATTERY, I, 0x0481, "s16", 0.1, 1, A, "current"),
     Reg("battery_power", "Power", DEV_BATTERY, I, 0x0482, "s32", 0.1, 0, W, "power"),

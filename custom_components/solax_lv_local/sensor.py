@@ -36,6 +36,8 @@ class SolaxSensor(SolaxEntity, SensorEntity):
             self._attr_options = list(dict.fromkeys(reg.options.values()))
         if reg.precision is not None and reg.device_class != "enum":
             self._attr_suggested_display_precision = reg.precision
+        if reg.display_precision is not None:
+            self._attr_suggested_display_precision = reg.display_precision
         if reg.diagnostic:
             self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_entity_registry_enabled_default = reg.enabled
