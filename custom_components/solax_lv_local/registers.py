@@ -173,7 +173,9 @@ SENSORS: tuple[Reg, ...] = (
     Reg("battery_soc", "State of charge", DEV_BATTERY, I, 0x0C04, scale=0.1, precision=1, unit=PCT, device_class="battery", display_precision=0),
     Reg("battery_voltage", "Voltage", DEV_BATTERY, I, 0x0480, "s16", 0.1, 1, V, "voltage"),
     Reg("battery_current", "Current", DEV_BATTERY, I, 0x0481, "s16", 0.1, 1, A, "current"),
-    Reg("battery_power", "Power", DEV_BATTERY, I, 0x0482, "s32", 0.1, 0, W, "power", deadband=10),
+    # 1 W/count, validated against battery V × A and cloud in both directions.
+    # Unlike EPS/generator power, this register must NOT be scaled by 0.1.
+    Reg("battery_power", "Power", DEV_BATTERY, I, 0x0482, "s32", 1, 0, W, "power", deadband=10),
     Reg("battery_temperature", "Temperature", DEV_BATTERY, I, 0x0484, "s16", 0.1, 1, C, "temperature"),
     Reg("battery_charge_today", "Charged today", DEV_BATTERY, I, 0x0488, "u16", 0.1, 1, KWH, "energy", "total_increasing"),
     Reg("battery_charge_total", "Charged total", DEV_BATTERY, I, 0x0489, "u32", 0.1, 1, KWH, "energy", "total_increasing"),

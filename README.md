@@ -20,6 +20,20 @@ slightly below active power, and the power factor stays at a fixed value.
 
 Sign conventions: grid power positive = importing; battery power positive = charging.
 
+### Battery power correction (v0.1.8)
+
+Earlier versions incorrectly divided battery power by 10. Register `0x0482` is a signed
+32-bit value in **watts (1 W/count)** on the tested unit: 1500 means 1500 W, not 150 W.
+This is checked against battery voltage × current and SolaX cloud readings. The existing
+idle deadband now applies to the correct physical range: magnitudes below 10 W show zero.
+No entity IDs, energy-counter mappings, schedules or inverter settings change.
+Existing historical battery-power samples are not automatically repaired by this update.
+
+Solar is measured on the DC input side; inverter output is AC. EPS is a separate reported
+backup-output measurement, not a verified whole-house consumption meter. Do not use
+inverter output and EPS as two independent sources and add them together. Which house
+circuits physically pass through EPS must be checked against the installation wiring.
+
 ## Controls (inverter settings)
 
 Charge/discharge start and end times for periods 1-3, max charge/discharge power, and charge/discharge
