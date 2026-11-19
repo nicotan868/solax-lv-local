@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .client import FC_READ_HOLDING, FC_READ_INPUT
-from .const import DEV_BATTERY, DEV_INVERTER
+from .const import DEV_BATTERY, DEV_BATTERY_2, DEV_INVERTER
 
 FAST, MEDIUM, SLOW = "fast", "medium", "slow"
 
@@ -42,6 +42,11 @@ BLOCKS: tuple[Block, ...] = (
     Block(FC_READ_INPUT, 0x0C2C, 0x01, SLOW),  # cycles
     Block(FC_READ_INPUT, 0x0C97, 0x06, SLOW),  # BMS temperatures
     Block(FC_READ_INPUT, 0x0CD7, 0x10, SLOW),  # 16 cell voltages
+    # Second battery pack (BMS slave 1) per the Lite-LV detailed sheet. Not every
+    # firmware fills these; a rejected or all-zero read just means no Battery 2 device.
+    Block(FC_READ_INPUT, 0x0C2E, 0x07, SLOW),  # pack 2 serial
+    Block(FC_READ_INPUT, 0x0C9E, 0x07, SLOW),  # pack 2 BMS temperatures
+    Block(FC_READ_INPUT, 0x0CE7, 0x10, SLOW),  # pack 2 cell voltages
     Block(FC_READ_HOLDING, 0x2302, 0x02, SLOW),  # export / power limit
     Block(FC_READ_HOLDING, 0x2500, 0x1C, SLOW),  # battery & EMS settings
     Block(FC_READ_HOLDING, 0x2542, 0x01, SLOW),  # generator rated power
@@ -207,6 +212,34 @@ SENSORS: tuple[Reg, ...] = (
         for i in range(6)
     ),
 )
+
+
+PACK2_CELL_BASE = 0x0CE7
+PACK2_SERIAL = (FC_READ_INPUT, 0x0C2E, 7)
+
+# Second pack: only per-pack cells, temperatures and serial exist. SoC, current and
+# power are bank totals and stay on the main battery device.
+PACK2_SENSORS: tuple[Reg, ...] = (
+    *(
+        Reg(f"pack2_cell_{i + 1:02d}_voltage", f"Cell {i + 1:02d} voltage", DEV_BATTERY_2, I, PACK2_CELL_BASE + i,
+            unit=MV, device_class="voltage", diagnostic=True)
+        for i in range(16)
+    ),
+    *(
+        Reg(f"pack2_bms_temperature_{i + 1}", f"BMS temperature {i + 1}", DEV_BATTERY_2, I, 0x0C9E + i, "s16",
+            unit=C, device_class="temperature", diagnostic=True)
+        for i in range(6)
+    ),
+)
+
+
+def pack2_cells(cache: dict[tuple[int, int], int]) -> list[int] | None:
+    """The 16 pack-2 cell voltages in mV, or None if the pack isn't reported."""
+    try:
+        cells = [cache[(FC_READ_INPUT, PACK2_CELL_BASE + i)] for i in range(16)]
+    except KeyError:
+        return None
+    return cells if any(cells) else None
 
 
 @dataclass(frozen=True)

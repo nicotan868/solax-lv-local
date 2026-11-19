@@ -23,7 +23,7 @@ from .const import (
     MEDIUM_EVERY,
     SLOW_EVERY,
 )
-from .registers import BLOCKS, FAST, IDENTITY, MEDIUM, SLOW, Control
+from .registers import BLOCKS, FAST, IDENTITY, MEDIUM, PACK2_SERIAL, SLOW, Control
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,6 +57,15 @@ class SolaxCoordinator(DataUpdateCoordinator[dict[tuple[int, int], int]]):
         self._cache: dict[tuple[int, int], int] = {}
         self._store: Store[dict[str, Any]] = Store(hass, STORE_VERSION, f"{DOMAIN}.{entry.entry_id}.writes")
         self._writes: dict[str, Any] = {"day": None, "counts": {}, "log": []}
+
+    @property
+    def pack2_serial(self) -> str | None:
+        function, address, count = PACK2_SERIAL
+        try:
+            regs = [self._cache[(function, address + i)] for i in range(count)]
+        except KeyError:
+            return None
+        return _text(regs) or None
 
     @property
     def daily_write_limit(self) -> int:

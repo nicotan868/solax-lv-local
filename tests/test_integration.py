@@ -14,12 +14,12 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from custom_components.solax_lv_local.client import ModbusExceptionResponse, RtuOverTcpClient
 from custom_components.solax_lv_local.const import CONF_UNIT_ID, DOMAIN
-from custom_components.solax_lv_local.registers import BLOCKS, CONTROLS, IDENTITY, SENSORS
+from custom_components.solax_lv_local.registers import BLOCKS, CONTROLS, IDENTITY, PACK2_SENSORS, SENSORS
 
 
 def test_every_register_is_polled():
     covered = {(b.function, b.start + i) for b in BLOCKS for i in range(b.count)}
-    for reg in SENSORS:
+    for reg in (*SENSORS, *PACK2_SENSORS):
         for i in range(reg.size):
             assert (reg.function, reg.address + i) in covered, reg.key
     for c in CONTROLS:
@@ -224,3 +224,61 @@ async def test_has_brand_images(hass: HomeAssistant):
 
     integration = await async_get_integration(hass, DOMAIN)
     assert integration.has_branding
+
+
+def _add_pack2(fake, cells=None):
+    """Fill the BMS slave-1 registers the way a second LD51C would report them."""
+    cells = cells or [3266 + (i % 3) for i in range(16)]
+    for i, mv in enumerate(cells):
+        fake.regs[(4, 0x0CE7 + i)] = mv
+    for i in range(7):
+        fake.regs[(4, 0x0C9E + i)] = 30 + i
+    sn = b"BATTEST0000002"
+    for i in range(7):
+        fake.regs[(4, 0x0C2E + i)] = int.from_bytes(sn[2 * i:2 * i + 2], "big")
+    return cells
+
+
+async def test_no_pack2_device_when_not_reported(hass: HomeAssistant, fake_inverter):
+    """Snapshot has no slave registers (inverter rejects the read): no Battery 2 device."""
+    entry = await _setup(hass, fake_inverter.port)
+    ent_reg = er.async_get(hass)
+    assert ent_reg.async_get_entity_id("sensor", DOMAIN, "HL1060TEST0001_pack2_voltage") is None
+    devices = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+    assert len(devices) == 2
+    assert entry.runtime_data.last_update_success
+
+
+async def test_no_pack2_device_when_all_zero(hass: HomeAssistant, fake_inverter):
+    _add_pack2(fake_inverter, [0] * 16)
+    await _setup(hass, fake_inverter.port)
+    assert er.async_get(hass).async_get_entity_id("sensor", DOMAIN, "HL1060TEST0001_pack2_voltage") is None
+
+
+async def test_pack2_device_and_values(hass: HomeAssistant, fake_inverter):
+    cells = _add_pack2(fake_inverter, [3266] * 15 + [3281])
+    entry = await _setup(hass, fake_inverter.port)
+    ent_reg = er.async_get(hass)
+    dev_reg = dr.async_get(hass)
+
+    def st(key):
+        eid = ent_reg.async_get_entity_id("sensor", DOMAIN, f"HL1060TEST0001_{key}")
+        assert eid, key
+        return hass.states.get(eid)
+
+    assert st("pack2_cell_16_voltage").state == "3281"
+    assert st("pack2_cell_voltage_max").state == "3281"
+    assert st("pack2_cell_voltage_min").state == "3266"
+    assert st("pack2_cell_voltage_spread").state == "15"
+    assert float(st("pack2_voltage").state) == round(sum(cells) / 1000, 2)
+    assert st("pack2_bms_temperature_1").state == "30"
+    devices = {next(iter(d.identifiers))[1]: d for d in dr.async_entries_for_config_entry(dev_reg, entry.entry_id)}
+    pack2 = devices["HL1060TEST0001_battery_2"]
+    assert pack2.name == "SolaX Local Battery 2"
+    assert pack2.serial_number == "BATTEST0000002"
+    assert pack2.via_device_id == devices["HL1060TEST0001_inverter"].id
+    assert len(devices) == 3
+    # main battery entities are untouched
+    assert st("battery_soc").state == "99.9"
+    eid = ent_reg.async_get_entity_id("sensor", DOMAIN, "HL1060TEST0001_pack2_voltage")
+    assert eid == "sensor.solax_local_battery_2_voltage"

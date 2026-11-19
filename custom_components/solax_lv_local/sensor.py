@@ -8,9 +8,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import SolaxConfigEntry
-from .const import DEV_INVERTER
+from .const import DEV_BATTERY_2, DEV_INVERTER
 from .entity import SolaxEntity
-from .registers import SENSORS, Reg, decode
+from .registers import PACK2_SENSORS, SENSORS, Reg, decode, pack2_cells
 
 
 async def async_setup_entry(
@@ -19,6 +19,10 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     entities: list[SensorEntity] = [SolaxSensor(coordinator, reg) for reg in SENSORS]
     entities.append(PvTotalSensor(coordinator))
+    # Second battery pack: only when the inverter actually reports its cells.
+    if pack2_cells(coordinator.data) is not None:
+        entities.extend(SolaxSensor(coordinator, reg) for reg in PACK2_SENSORS)
+        entities.extend(Pack2CellStat(coordinator, *stat) for stat in PACK2_STATS)
     async_add_entities(entities)
 
 
@@ -69,3 +73,32 @@ class PvTotalSensor(SolaxEntity, SensorEntity):
         if any(v is None for v in values):
             return None
         return sum(values)
+
+
+# key, name, unit, device class, function of the 16 cell voltages (mV)
+PACK2_STATS = (
+    ("pack2_voltage", "Voltage", "V", SensorDeviceClass.VOLTAGE, lambda c: round(sum(c) / 1000, 2)),
+    ("pack2_cell_voltage_max", "Cell voltage max", "mV", SensorDeviceClass.VOLTAGE, max),
+    ("pack2_cell_voltage_min", "Cell voltage min", "mV", SensorDeviceClass.VOLTAGE, min),
+    ("pack2_cell_voltage_spread", "Cell voltage spread", "mV", SensorDeviceClass.VOLTAGE, lambda c: max(c) - min(c)),
+)
+
+
+class Pack2CellStat(SolaxEntity, SensorEntity):
+    """Derived from pack 2's cell voltages (sum, max, min, max-min balance)."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator, key, name, unit, device_class, func) -> None:
+        super().__init__(coordinator, DEV_BATTERY_2, key)
+        self._attr_name = name
+        self._attr_native_unit_of_measurement = unit
+        self._attr_device_class = device_class
+        self._func = func
+        if unit == "V":
+            self._attr_suggested_display_precision = 2
+
+    @property
+    def native_value(self):
+        cells = pack2_cells(self.coordinator.data)
+        return None if cells is None else self._func(cells)
