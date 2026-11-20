@@ -5,13 +5,12 @@ from __future__ import annotations
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DEV_BATTERY, DEV_BATTERY_2, DEV_INVERTER, DEVICE_NAMES, DOMAIN, MANUFACTURER
+from .const import DEV_BATTERY, DEV_INVERTER, DEVICE_NAMES, DOMAIN, MANUFACTURER
 from .coordinator import SolaxCoordinator
 
 MODELS = {
     DEV_INVERTER: "X1-Hybrid-LV",
     DEV_BATTERY: "LV battery (BMS)",
-    DEV_BATTERY_2: "LV battery pack 2 (BMS slave)",
 }
 
 
@@ -37,8 +36,6 @@ def device_info(coordinator: SolaxCoordinator, device: str) -> DeviceInfo:
             info["via_device_id"] = coordinator.inverter_device_id
         if device == DEV_BATTERY and ident.get("battery_serial"):
             info["serial_number"] = ident["battery_serial"]
-        if device == DEV_BATTERY_2 and coordinator.pack2_serial:
-            info["serial_number"] = coordinator.pack2_serial
     return info
 
 

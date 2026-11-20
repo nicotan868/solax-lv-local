@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .client import FC_READ_HOLDING, FC_READ_INPUT
-from .const import DEV_BATTERY, DEV_BATTERY_2, DEV_INVERTER
+from .const import DEV_BATTERY, DEV_INVERTER
 
 FAST, MEDIUM, SLOW = "fast", "medium", "slow"
 
@@ -42,11 +42,6 @@ BLOCKS: tuple[Block, ...] = (
     Block(FC_READ_INPUT, 0x0C2C, 0x01, SLOW),  # cycles
     Block(FC_READ_INPUT, 0x0C97, 0x06, SLOW),  # BMS temperatures
     Block(FC_READ_INPUT, 0x0CD7, 0x10, SLOW),  # 16 cell voltages
-    # Second battery pack (BMS slave 1) per the Lite-LV detailed sheet. Not every
-    # firmware fills these; a rejected or all-zero read just means no Battery 2 device.
-    Block(FC_READ_INPUT, 0x0C2E, 0x07, SLOW),  # pack 2 serial
-    Block(FC_READ_INPUT, 0x0C9E, 0x07, SLOW),  # pack 2 BMS temperatures
-    Block(FC_READ_INPUT, 0x0CE7, 0x10, SLOW),  # pack 2 cell voltages
     Block(FC_READ_HOLDING, 0x2302, 0x02, SLOW),  # export / power limit
     Block(FC_READ_HOLDING, 0x2500, 0x1C, SLOW),  # battery & EMS settings
     Block(FC_READ_HOLDING, 0x2542, 0x01, SLOW),  # generator rated power
@@ -83,6 +78,7 @@ class Reg:
     options: dict[int, str] | None = None  # enum mapping
     display_precision: int | None = None  # UI rounding (value keeps full precision)
     deadband: float | None = None  # |value| below this reads as 0 (idle noise)
+    floor: float | None = None  # values below this read as this (e.g. PV standby draw -> 0)
     icon: str | None = None
 
     @property
@@ -109,6 +105,8 @@ def decode(reg: Reg, cache: dict[tuple[int, int], int]):
     value = raw * reg.scale
     if reg.deadband is not None and abs(value) < reg.deadband:
         value = 0
+    if reg.floor is not None and value < reg.floor:
+        value = reg.floor
     if reg.precision is not None:
         return round(value, reg.precision) if reg.precision else int(round(value))
     return value
@@ -159,10 +157,12 @@ SENSORS: tuple[Reg, ...] = (
     # ---- PV
     Reg("pv1_voltage", "Solar string 1 – 3 Voltage", DEV_INVERTER, I, 0x028B, "s16", 0.1, 1, V, "voltage"),
     Reg("pv1_current", "Solar string 1 – 2 Current", DEV_INVERTER, I, 0x028C, "s16", 0.1, 1, A, "current"),
-    Reg("pv1_power", "Solar string 1 – 1 Power", DEV_INVERTER, I, 0x028D, "u32", unit=W, device_class="power"),
+    # Signed: at dawn/dusk the MPPT draws a few watts (-1..-140 W seen live), which read as
+    # ~4.29e9 W when decoded unsigned. Solar can't be negative, so show 0.
+    Reg("pv1_power", "Solar string 1 – 1 Power", DEV_INVERTER, I, 0x028D, "s32", unit=W, device_class="power", floor=0),
     Reg("pv2_voltage", "Solar string 2 – 3 Voltage", DEV_INVERTER, I, 0x0292, "s16", 0.1, 1, V, "voltage"),
     Reg("pv2_current", "Solar string 2 – 2 Current", DEV_INVERTER, I, 0x0293, "s16", 0.1, 1, A, "current"),
-    Reg("pv2_power", "Solar string 2 – 1 Power", DEV_INVERTER, I, 0x0294, "u32", unit=W, device_class="power"),
+    Reg("pv2_power", "Solar string 2 – 1 Power", DEV_INVERTER, I, 0x0294, "s32", unit=W, device_class="power", floor=0),
     # ---- EPS (backup output)
     Reg("eps_voltage", "Backup (EPS) – 3 Voltage", DEV_INVERTER, I, 0x0400, "s16", 0.1, 1, V, "voltage"),
     Reg("eps_current", "Backup (EPS) – 2 Current", DEV_INVERTER, I, 0x0401, "s16", 0.1, 1, A, "current"),
@@ -212,34 +212,6 @@ SENSORS: tuple[Reg, ...] = (
         for i in range(6)
     ),
 )
-
-
-PACK2_CELL_BASE = 0x0CE7
-PACK2_SERIAL = (FC_READ_INPUT, 0x0C2E, 7)
-
-# Second pack: only per-pack cells, temperatures and serial exist. SoC, current and
-# power are bank totals and stay on the main battery device.
-PACK2_SENSORS: tuple[Reg, ...] = (
-    *(
-        Reg(f"pack2_cell_{i + 1:02d}_voltage", f"Cell {i + 1:02d} voltage", DEV_BATTERY_2, I, PACK2_CELL_BASE + i,
-            unit=MV, device_class="voltage", diagnostic=True)
-        for i in range(16)
-    ),
-    *(
-        Reg(f"pack2_bms_temperature_{i + 1}", f"BMS temperature {i + 1}", DEV_BATTERY_2, I, 0x0C9E + i, "s16",
-            unit=C, device_class="temperature", diagnostic=True)
-        for i in range(6)
-    ),
-)
-
-
-def pack2_cells(cache: dict[tuple[int, int], int]) -> list[int] | None:
-    """The 16 pack-2 cell voltages in mV, or None if the pack isn't reported."""
-    try:
-        cells = [cache[(FC_READ_INPUT, PACK2_CELL_BASE + i)] for i in range(16)]
-    except KeyError:
-        return None
-    return cells if any(cells) else None
 
 
 @dataclass(frozen=True)

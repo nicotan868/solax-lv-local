@@ -6,7 +6,7 @@ No cloud, no dependencies beyond Home Assistant.
 
 ## Devices and entities
 
-Two devices (three with a second battery pack), laid out like the SolaX cloud integration:
+Two devices, laid out like the SolaX cloud integration:
 
 - **SolaX Local Inverter**: grid voltage/frequency/power; output power, current, today/total; solar
   power and string 1/2 voltage, current, power; backup (EPS) voltage, current, power, frequency;
@@ -14,17 +14,18 @@ Two devices (three with a second battery pack), laid out like the SolaX cloud in
   (diagnostic); plus the controls below.
 - **SolaX Local Battery**: SoC, voltage, current, power, temperature, charged/discharged today/total,
   cycles, max/min cell voltage and temperature, 16 cell voltages and 6 BMS temperatures (diagnostic).
-  SoC, voltage, current and power are totals for the whole battery bank.
-- **SolaX Local Battery 2** (v0.1.9, only if the inverter reports a second pack): pack voltage (sum of
-  cells), cell max/min and spread (balance), plus 16 cell voltages, 6 BMS temperatures and the pack
-  serial. Read from the BMS slave-1 registers (`0x0C2E` serial, `0x0C9E` temperatures, `0x0CE7` cells)
-  documented in SolaX's X1-Lite-LV detailed register sheet. There is no per-pack SoC, current or power.
-  If the read is rejected or all zero, no Battery 2 device is created; raw values are in diagnostics.
 
 Apparent power and power factor are diagnostic only: on the tested unit apparent power can read
 slightly below active power, and the power factor stays at a fixed value.
 
 Sign conventions: grid power positive = importing; battery power positive = charging.
+
+### Solar power at dawn/dusk (v0.1.10)
+
+The string power registers are signed. When there is almost no light the MPPT draws a few
+watts, which earlier versions decoded as about 4,294,967,000 W. They now read 0 W.
+v0.1.9's experimental second-battery device is removed: the tested inverter (firmware
+LVESS_V436.01) rejects the BMS slave registers, so no per-pack data is available locally.
 
 ### Battery power correction (v0.1.8)
 

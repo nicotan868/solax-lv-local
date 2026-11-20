@@ -21,10 +21,8 @@ SLOW_EVERY = 30  # 5 min at the default 10 s
 # Device keys
 DEV_INVERTER = "inverter"
 DEV_BATTERY = "battery"
-DEV_BATTERY_2 = "battery_2"  # second pack in parallel (BMS slave 1)
 
 DEVICE_NAMES = {
     DEV_INVERTER: "SolaX Local Inverter",
     DEV_BATTERY: "SolaX Local Battery",
-    DEV_BATTERY_2: "SolaX Local Battery 2",
 }
